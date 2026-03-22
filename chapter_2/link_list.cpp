@@ -104,6 +104,7 @@ int ListLength(LinkList &L){
 }
 
 // 头插法建立链表
+bool 
 
 // 尾插法建立链表
 

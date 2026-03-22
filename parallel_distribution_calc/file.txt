@@ -1,0 +1,80 @@
+在 MPI 编程中，常用的函数可以分为几大类。针对你正在做的矩阵向量乘法实验，以下是最核心、最频繁使用的函数清单：
+
+1. 环境管理函数（必备）
+每一个 MPI 程序都必须包含的基础框架。
+
+MPI_Init(&argc, &argv)
+用途：初始化 MPI 环境。通常是程序中第一个调用的 MPI 函数。
+
+MPI_Comm_rank(MPI_COMM_WORLD, &rank)
+用途：获取当前进程的 ID（编号）。从 0 开始。
+作用：让程序知道“我是谁”，从而决定执行哪一部分计算。
+
+MPI_Comm_size(MPI_COMM_WORLD, &size)
+用途：获取总进程数。
+作用：让程序知道“总共有多少人”，用来平分任务。
+
+MPI_Finalize()
+用途：结束 MPI 环境。通常是程序结束前的最后一个 MPI 函数。
+
+MPI_Wtime()
+用途：返回当前的时间（秒）。
+实验用途：在计算前后各调用一次相减，用来测量 1/2/4/8/16 进程 下的运行时间。
+
+2. 集体通信函数（矩阵运算的核心）
+这类函数涉及一个通信域里的所有进程，非常高效。
+
+MPI_Bcast(buffer, count, datatype, root, comm)
+用途：广播。由 root 进程将数据发送给所有其他进程。
+
+矩阵实验：将完整的向量 𝑥 从进程 0 发送给所有进程。
+
+MPI_Scatter(sendbuf, sendcount, sendtype, recvbuf, recvcount, recvtype, root, comm)
+用途：散播。将一份大数据均匀切块，分发给所有进程。
+
+矩阵实验：进程 0 将大矩阵 𝐴 按行切开，每个进程拿走一部分。
+
+MPI_Gather(sendbuf, sendcount, sendtype, recvbuf, recvcount, recvtype, root, comm)
+用途：收集。将所有进程的小数据块收集起来，在 root 进程拼接成一个大数组。
+
+矩阵实验：所有进程计算完各自的结果段后，汇总给进程 0 形成完整的向量 𝑦 。
+
+MPI_Reduce(sendbuf, recvbuf, count, datatype, op, root, comm)
+用途：规约。将所有进程的数据按某种运算（如求和 MPI_SUM、最大值 MPI_MAX）合并到 root。
+
+矩阵实验：在棋盘划分中，由于每个进程只算了局部部分和，需要用它按列求和。
+
+3. 点对点通信（底层控制）
+如果不用上面的高级函数，也可以手动发送和接收。
+
+MPI_Send(buf, count, type, dest, tag, comm)
+用途：发送数据给指定编号为 dest 的进程。
+
+MPI_Recv(buf, count, type, source, tag, comm, status)
+用途：接收来自 source 进程的数据。
+
+4. 常用数据类型 (Datatype)
+在函数参数中，你需要告诉 MPI 数据是什么类型：
+MPI_INT : 整数
+MPI_FLOAT : 单精度浮点
+MPI_DOUBLE : 双精度浮点（矩阵乘法通常用这个）
+MPI_CHAR : 字符
+
+5. 函数参数速记表
+大多数通信函数的参数顺序都有规律：
+Buffer: 数据在哪里（起始地址）。
+Count: 发送/接收多少个元素。
+Type: 元素是什么类型。
+Source/Dest: 发给谁 / 谁发来的。
+Tag: 消息标签（类似快递单号，简单程序通常填 0）。
+Comm: 通信域（通常填 MPI_COMM_WORLD）。
+
+针对你的实验建议：
+
+对于带状划分，你只需要掌握这 6 个函数：
+Init, Comm_rank, Comm_size, Bcast, Scatter, Gather, Finalize。
+
+对于棋盘划分，你可能还需要：
+MPI_Cart_create: 创建笛卡尔网格拓扑。
+MPI_Cart_coords: 获取当前进程在方阵中的坐标（如第几行第几列进程）。
+MPI_Reduce: 用于列向求和。
